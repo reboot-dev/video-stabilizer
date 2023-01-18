@@ -7,17 +7,21 @@ py_binary (
     srcs = ["video_stabilizer.py"],
     deps = [
         #"//video_stabilizer_server:server",
-        #"//video_stabilizer_proto:video_stabilizer_proto",
-        requirement("grpcio")
-    ]
+        "//video_stabilizer_proto:video_stabilizer_py_proto",
+        requirement("grpcio"),
+        requirement("grpcio-tools"),
+        requirement("opencv-python-headless"),
+        requirement("numpy"),
+    ],
 )
 
+"""
 py_test (
     name = "video_stabilizer_test",
     srcs = ["video_stabilizer_test.py"],
     deps = [
         "//video_stabilizer:stabilizer",
         "//video_stabilizer_proto:video_stabilizer_proto",
-        requirement(""),
     ]
 )
+"""

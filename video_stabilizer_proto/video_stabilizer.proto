@@ -9,18 +9,18 @@ service VideoStabilizer {
 message StabilizeRequest {
  bytes frame_image = 1;
  bytes prev_frame = 2;
- TODO features = 3;
- TODO trajectory = 4;
- int padding = 5;
- TODO transforms = 6;
- int frame_index = 7;
+ //TODO features = 3;
+ //TODO trajectory = 4;
+ int32 padding = 3;
+ //TODO transforms = 6;
+ int32 frame_index = 4;
 }
 
 message StabilizeResponse {
  bytes stabilized_frame_image = 1;
- TODO features = 2;
- TODO trajectory = 3;
- TODO transforms = 4;
+ //TODO features = 2;
+ //TODO trajectory = 3;
+ //TODO transforms = 4;
 }
 
 service Flow {
@@ -30,12 +30,12 @@ service Flow {
 message FlowRequest {
  bytes prev_frame = 1;
  bytes frame_image = 2;
- TODO features = 3;
+ //TODO features = 3;
 }
 
 message FlowResponse {
- TODO transform = 1;
- TODO features = 2;
+ //TODO transform = 1;
+ //TODO features = 2;
 }
 
 service CumSum {
@@ -43,10 +43,10 @@ service CumSum {
 }
 
 message CumSumRequest {
- TODO trajectory_element = 1;
- TODO transform = 2;
+ //TODO trajectory_element = 1;
+ //TODO transform = 2;
 }
 
 message CumSumResponse {
- TODO sum = 1;
+ //TODO sum = 1;
 }

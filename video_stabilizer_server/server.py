@@ -1,6 +1,5 @@
 import grpc
 from concurrent import futures
-import time
 
 import numpy as np
 import unary.unary_pb2_grpc as pb2_grpc
