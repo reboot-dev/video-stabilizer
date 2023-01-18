@@ -1,6 +1,21 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
+    name = "com_github_grpc_grpc",
+    urls = ["https://github.com/grpc/grpc/archive/refs/tags/v1.45.0.tar.gz"],
+    strip_prefix = "grpc-1.45.0",
+    sha256 = "ec19657a677d49af59aa806ec299c070c882986c9fcc022b1c22c2a3caf01bcd",
+)
+
+load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
+
+grpc_deps()
+
+load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
+
+grpc_extra_deps()
+
+http_archive(
     name = "rules_python",
     sha256 = "c03246c11efd49266e8e41e12931090b613e12a59e6f55ba2efd29a7cb8b4258",
     strip_prefix = "rules_python-0.11.0",
@@ -23,4 +38,3 @@ pip_install(
     python_interpreter_target = interpreter,
     requirements = "//third_party:requirements.txt",
 )
-
