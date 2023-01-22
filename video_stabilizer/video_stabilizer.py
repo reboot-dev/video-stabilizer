@@ -254,7 +254,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Run the video stabilizer.")
 
-    #parser.add_argument("--num-videos", required=True, type=int)
+    parser.add_argument("--num-videos", required=True, type=int)
     parser.add_argument("--video-path", required=True, type=str)
     parser.add_argument("--output-file", type=str)
     inputs = parser.parse_args()
