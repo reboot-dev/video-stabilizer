@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package unary;
+package video_stabilizer;
 
 service VideoStabilizer {
  rpc Stabilize(StabilizeRequest) returns (StabilizeResponse) {}
