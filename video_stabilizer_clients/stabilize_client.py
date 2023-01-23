@@ -2,7 +2,6 @@ import grpc
 import video_stabilizer_proto.video_stabilizer_pb2_grpc as pb2_grpc
 import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 
-
 class StabilizeClient(object):
     # Client for gRPC functionality
 

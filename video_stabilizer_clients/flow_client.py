@@ -18,6 +18,7 @@ class FlowClient(object):
         # bind the client and the server
         self.stub = pb2_grpc.VideoStabilizerStub(self.channel)
 
-    def flow(self, prev_frame, frame_image, features):
-        flow_request = pb2.FlowRequest(prev_frame=prev_frame, frame_image=frame_image, features=features)
+    def flow(self, prev_frame, frame_image):
+        # flow_request = pb2.FlowRequest(prev_frame=prev_frame, frame_image=frame_image, features=features)
+        flow_request = pb2.FlowRequest(prev_frame=prev_frame, frame_image=frame_image)
         return self.stub.Flow(flow_request)

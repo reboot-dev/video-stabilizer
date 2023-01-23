@@ -8,6 +8,8 @@ import video_stabilizer_proto.video_stabilizer_pb2_grpc as pb2_grpc
 import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 import cv2
 
+MAX_MESSAGE_LENGTH = 100 * 1024 * 1024
+
 class CumSumService(pb2_grpc.CumSumServicer):
 
     def __init__(self, *args, **kwargs):
@@ -22,7 +24,10 @@ class CumSumService(pb2_grpc.CumSumServicer):
         return pb2.CumSumResponse(**result)
 
 def serve():
-    cumsum_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    cumsum_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=[
+        ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
+        ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH)
+    ])
     pb2_grpc.add_CumSumServicer_to_server(CumSumService(), cumsum_server)
     cumsum_server.add_insecure_port('[::]:50053')
     cumsum_server.start()

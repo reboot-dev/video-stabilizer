@@ -8,25 +8,28 @@ import video_stabilizer_proto.video_stabilizer_pb2_grpc as pb2_grpc
 import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 import cv2
 
+MAX_MESSAGE_LENGTH = 100 * 1024 * 1024
+
 class StabilizeService(pb2_grpc.VideoStabilizerServicer):
 
     def __init__(self, *args, **kwargs):
         pass
 
-    def Stabilize(self, request):
-
+    def Stabilize(self, request, context):
+        print("hello")
         # get the frame from the incoming request
         frame_image = request.frame_image
         prev_frame = request.prev_frame
-        features = request.features
-        trajectory= request.trajectory
+        # features = request.features
+        #trajectory= request.trajectory
         padding = request.padding
-        transforms = request.transforms
+        # transforms = request.transforms
         frame_index = request.frame_index
 
         flow_client = FlowClient()
         cumsum_client = CumSumClient()
-        result = flow_client.flow(prev_frame, frame_image, features)
+        # result = flow_client.flow(prev_frame, frame_image, features)
+        result = flow_client.flow(prev_frame, frame_image)
         transform = result.transform
         features = result.features
         # Periodically reset the features to track for better accuracy
@@ -54,11 +57,15 @@ class StabilizeService(pb2_grpc.VideoStabilizerServicer):
         #     sink.send.remote(next_to_send, final_transform, frame_timestamps.pop(0))
         #     next_to_send += 1
 
-        result = {'stabilized_frame_image': final_transform, 'features': features, 'trajectory': trajectory, 'transforms': transforms}
+        # result = {'stabilized_frame_image': final_transform, 'features': features, 'trajectory': trajectory, 'transforms': transforms}
+        result = {'stabilized_frame_image': final_transform}
         return pb2.StabilizeResponse(**result)
 
 def serve():
-    stabilize_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    stabilize_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=[
+        ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
+        ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH)
+    ])
     pb2_grpc.add_VideoStabilizerServicer_to_server(StabilizeService(), stabilize_server)
     stabilize_server.add_insecure_port('[::]:50051')
     stabilize_server.start()

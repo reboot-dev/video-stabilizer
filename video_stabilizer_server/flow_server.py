@@ -8,6 +8,8 @@ import video_stabilizer_proto.video_stabilizer_pb2_grpc as pb2_grpc
 import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 import cv2
 
+MAX_MESSAGE_LENGTH = 100 * 1024 * 1024
+
 class FlowService(pb2_grpc.FlowServicer):
 
     def __init__(self, *args, **kwargs):
@@ -54,7 +56,10 @@ class FlowService(pb2_grpc.FlowServicer):
         return pb2.FlowResponse(**result)
 
 def serve():
-    flow_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    flow_server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=[
+        ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
+        ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH)
+    ])
     pb2_grpc.add_FlowServicer_to_server(FlowService(), flow_server)
     flow_server.add_insecure_port('[::]:50052')
     flow_server.start()
