@@ -16,8 +16,7 @@ class CumSumClient(object):
             '{}:{}'.format(self.host, self.server_port))
 
         # bind the client and the server
-        self.stub = pb2_grpc.VideoStabilizerStub(self.channel)
+        self.stub = pb2_grpc.CumSumStub(self.channel)
 
-    def cumsum(self, trajectory_element, transform):
-        cumsum_request = pb2.CumSumRequest(trajectory_element=trajectory_element, transform= transform)
+    def cumsum(self, cumsum_request):
         return self.stub.CumSum(cumsum_request)

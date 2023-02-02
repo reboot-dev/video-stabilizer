@@ -1,6 +1,5 @@
 import grpc
 from concurrent import futures
-
 import numpy as np
 from video_stabilizer_clients.cumsum_client import CumSumClient
 from video_stabilizer_clients.flow_client import FlowClient
@@ -10,23 +9,37 @@ import cv2
 
 MAX_MESSAGE_LENGTH = 100 * 1024 * 1024
 
+def list_encode(lst):
+    return bytes(lst)
+
+def list_decode(b):
+    return list(b)
+
+def np_array_encode(lst):
+    return np.ndarray.tobytes(lst)
+
+def np_array_decode(b):
+    return np.frombuffer(b)
+
 class FlowService(pb2_grpc.FlowServicer):
 
     def __init__(self, *args, **kwargs):
         pass
 
-    def Flow(self, request):
-        prev_frame = request.prev_frame
-        frame_image = request.frame_image
-        p0 = request.features
+    def Flow(self, request, context):
+        prev_frame = np_array_decode(request.prev_frame)
+        frame_image = np_array_decode(request.frame_image)
+        p0 = np_array_decode(request.features)
 
-        if p0 is None or p0.shape[0] < 100:
+        print(prev_frame)
+
+        if p0 is [] or p0.shape[0] < 100:
             p0 = cv2.goodFeaturesToTrack(prev_frame,
                                          maxCorners=200,
                                          qualityLevel=0.01,
                                          minDistance=30,
                                          blockSize=3)
-
+        print("test")
         # Calculate optical flow (i.e. track feature points)
         p1, status, err = cv2.calcOpticalFlowPyrLK(prev_frame, frame_image, p0, None) 
 

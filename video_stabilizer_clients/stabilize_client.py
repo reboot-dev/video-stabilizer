@@ -16,9 +16,7 @@ class StabilizeClient(object):
         # bind the client and the server
         self.stub = pb2_grpc.VideoStabilizerStub(self.channel)
 
-    def get_stabilized_frame_image(self, frame_image, prev_frame, padding, frame_index):
+    def stabilize(self, frame_image_request):
         # Client function to call the rpc for StabilizeRequest
 
-        # frame_image_request = pb2.StabilizeRequest(frame_image=frame_image, prev_frame=prev_frame, features=features, trajectory=trajectory, padding=padding, transforms=transforms, frame_index=frame_index)
-        frame_image_request = pb2.StabilizeRequest(frame_image=frame_image, prev_frame=prev_frame, padding=padding, frame_index=frame_index)
         return self.stub.Stabilize(frame_image_request)

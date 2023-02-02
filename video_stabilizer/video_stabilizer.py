@@ -1,6 +1,10 @@
 import time
 import cv2
+import threading
 from video_stabilizer_clients.stabilize_client import StabilizeClient
+import video_stabilizer_server.stabilize_server as stabilizer_server
+import video_stabilizer_server.cumsum_server as cumsum_server 
+import video_stabilizer_server.flow_server as flow_server 
 import video_stabilizer_proto.video_stabilizer_pb2_grpc as pb2_grpc
 import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 import numpy as np
@@ -129,6 +133,18 @@ class Decoder:
     def ready(self):
         return
 
+def list_encode(lst):
+    return bytes(lst)
+
+def list_decode(b):
+    return list(b)
+
+def np_array_encode(lst):
+    return np.ndarray.tobytes(lst)
+
+def np_array_decode(b):
+    return np.frombuffer(b)
+
 def process_videos(video_pathname, num_videos, output_filename):
     # Initializing signal
     signal = Signal()
@@ -166,7 +182,7 @@ def process_videos(video_pathname, num_videos, output_filename):
     transforms = []
 
     # 3D array
-    features = []
+    features = np.empty(0)
 
     frame_timestamp = start_frame / fps
     diff = frame_timestamp - time.time()
@@ -185,13 +201,13 @@ def process_videos(video_pathname, num_videos, output_filename):
 
         frame = decoder.decode(start_frame + frame_index + 1)
 
-        # result = stabilize_client.get_stabilized_frame_image(bytes(frame), bytes(prev_frame), features, trajectory, padding, transforms, frame_index)
-        result = stabilize_client.get_stabilized_frame_image(bytes(frame), bytes(prev_frame), padding, frame_index)
+        print(prev_frame)
+        result = stabilize_client.stabilize(pb2.StabilizeRequest(frame_image=np_array_encode(frame), prev_frame=np_array_encode(prev_frame), features=np_array_encode(features), trajectory=list_encode(trajectory), padding=padding, transforms=list_encode(transforms), frame_index=frame_index))
 
         prev_frame = result.stabilized_frame_image
-        # features = result.features
-        # trajectory = result.trajectory
-        # transforms = result.transforms
+        features = np_array_decode(result.features)
+        trajectory = list_decode(result.trajectory)
+        transforms = list_decode(result.transforms)
 
     # TODO: Should we be calling smooth here?
     # while next_to_send < num_total_frames - 1:
@@ -229,6 +245,9 @@ def process_videos(video_pathname, num_videos, output_filename):
 
 
 def main(args):
+    threading.Thread(target=stabilizer_server.serve).start()
+    threading.Thread(target=flow_server.serve).start()
+    threading.Thread(target=cumsum_server.serve).start()
     process_videos(args.video_path, args.num_videos, args.output_file)
 
 if __name__ == "__main__":
