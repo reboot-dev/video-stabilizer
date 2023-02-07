@@ -65,7 +65,7 @@ class FlowService(pb2_grpc.FlowServicer):
         # Update features to track. 
         p0 = good_new.reshape(-1, 1, 2)
 
-        result = {'transform': transform, 'features': p0}
+        result = {'transform': pickle.dumps(transform), 'features': pickle.dumps(p0)}
         return pb2.FlowResponse(**result)
 
 def serve():
