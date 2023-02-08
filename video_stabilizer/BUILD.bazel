@@ -6,9 +6,12 @@ py_binary (
     name = "video_stabilizer",
     srcs = ["video_stabilizer.py"],
     deps = [
-        #"//video_stabilizer_server:server",
+        "//video_stabilizer_server:stabilize_server",
+        "//video_stabilizer_server:flow_server",
+        "//video_stabilizer_server:cumsum_server",
         "//video_stabilizer_proto:video_stabilizer_py_proto",
         "//video_stabilizer_proto:video_stabilizer_py_grpc",
+        "//video_stabilizer_clients:stabilize_client",
         requirement("grpcio"),
         requirement("grpcio-tools"),
         requirement("opencv-python-headless"),

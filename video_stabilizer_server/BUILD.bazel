@@ -1,7 +1,44 @@
-load("@rules_python//python:defs.bzl", "py_library")
+load("@rules_python//python:defs.bzl", "py_binary")
+load("@python_deps//:requirements.bzl", "requirement")
 
-py_library (
-    name = "server",
-    srcs = ["server.py"],
+py_binary (
+    name = "stabilize_server",
+    srcs = ["stabilize_server.py"],
+    deps = [
+        "//video_stabilizer_clients:flow_client",
+        "//video_stabilizer_clients:cumsum_client",
+        requirement("grpcio"),
+        requirement("grpcio-tools"),
+        requirement("opencv-python-headless"),
+        requirement("numpy"),
+    ],
+    visibility = ["//visibility:public"]
+)
+
+py_binary (
+    name = "flow_server",
+    srcs = ["flow_server.py"],
+    deps = [
+        "//video_stabilizer_clients:flow_client",
+        "//video_stabilizer_clients:cumsum_client",
+        requirement("grpcio"),
+        requirement("grpcio-tools"),
+        requirement("opencv-python-headless"),
+        requirement("numpy"),
+    ],
+    visibility = ["//visibility:public"]
+)
+
+py_binary (
+    name = "cumsum_server",
+    srcs = ["cumsum_server.py"],
+    deps = [
+        "//video_stabilizer_clients:flow_client",
+        "//video_stabilizer_clients:cumsum_client",
+        requirement("grpcio"),
+        requirement("grpcio-tools"),
+        requirement("opencv-python-headless"),
+        requirement("numpy"),
+    ],
     visibility = ["//visibility:public"]
 )

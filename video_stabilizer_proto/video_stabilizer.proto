@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package unary;
+package video_stabilizer;
 
 service VideoStabilizer {
  rpc Stabilize(StabilizeRequest) returns (StabilizeResponse) {}
@@ -9,18 +9,18 @@ service VideoStabilizer {
 message StabilizeRequest {
  bytes frame_image = 1;
  bytes prev_frame = 2;
- //TODO features = 3;
- //TODO trajectory = 4;
- int32 padding = 3;
- //TODO transforms = 6;
- int32 frame_index = 4;
+ bytes features = 3;
+ bytes trajectory = 4;
+ int32 padding = 5;
+ bytes transforms = 6;
+ int32 frame_index = 7;
 }
 
 message StabilizeResponse {
  bytes stabilized_frame_image = 1;
- //TODO features = 2;
- //TODO trajectory = 3;
- //TODO transforms = 4;
+ bytes features = 2;
+ bytes trajectory = 3;
+ bytes transforms = 4;
 }
 
 service Flow {
@@ -30,12 +30,12 @@ service Flow {
 message FlowRequest {
  bytes prev_frame = 1;
  bytes frame_image = 2;
- //TODO features = 3;
+ bytes features = 3;
 }
 
 message FlowResponse {
- //TODO transform = 1;
- //TODO features = 2;
+ bytes transform = 1;
+ bytes features = 2;
 }
 
 service CumSum {

@@ -1,38 +1,23 @@
 import time
 import cv2
-import grpc
+import threading
+from video_stabilizer_clients.stabilize_client import StabilizeClient
+import video_stabilizer_server.stabilize_server as stabilizer_server
+import video_stabilizer_server.cumsum_server as cumsum_server 
+import video_stabilizer_server.flow_server as flow_server 
 import video_stabilizer_proto.video_stabilizer_pb2_grpc as pb2_grpc
 import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 import numpy as np
 from collections import defaultdict
 
 
-class Signal:
-    def __init__(self):
-        self.num_signals = 0
-
-    def send(self):
-        self.num_signals += 1
-
-    def wait(self):
-        return self.num_signals
-
-    def ready(self):
-        return
-
-def fixBorder(frame):
-  s = frame.shape
-  # Scale the image 4% without moving the center
-  T = cv2.getRotationMatrix2D((s[1]/2, s[0]/2), 0, 1.04)
-  frame = cv2.warpAffine(frame, T, (s[1], s[0]))
-  return frame
-
-class Viewer:
+class Writer:
     def __init__(self, video_pathname):
+        # TODO: need to change this to be a different video pathname, let's use "stabilized_" + video_pathname
         self.video_pathname = video_pathname
         self.v = cv2.VideoCapture(video_pathname)
 
-    def send(self, transform):
+    def write_stabilized_video_frame_out(self, transform):
         success, frame = self.v.read() 
         assert success
 
@@ -63,54 +48,10 @@ class Viewer:
         if(frame_out.shape[1] > 1920): 
             frame_out = cv2.resize(frame_out, (frame_out.shape[1]//2, frame_out.shape[0]//2));
         
-        cv2.imshow("Before and After", frame_out)
-        cv2.waitKey(1)
-        #out.write(frame_out)
+        # cv2.imshow("Before and After", frame_out)
+        # cv2.waitKey(1)
+        out.write(frame_out)
 
-    def ready(self):
-        return
-
-class Sink(object):
-
-    def __init__(self, signal, viewer):
-        self.signal = signal
-        self.num_frames_left = {}
-        self.latencies = defaultdict(list)
-
-        self.viewer = viewer
-        self.last_view = None
-
-    def set_expected_frames(self, video_index, num_frames):
-        self.num_frames_left[video_index] = num_frames
-        print("Expecting", self.num_frames_left[video_index], "total frames from video", video_index)
-
-    def send(self, frame_index, transform, timestamp):
-        if frame_index < len(self.latencies[video_index]):
-                return
-        assert frame_index == len(self.latencies[video_index]), frame_index
-
-        self.latencies[video_index].append(time.time() - timestamp)
-
-        self.num_frames_left[video_index] -= 1
-        if self.num_frames_left[video_index] % 100 == 0:
-            print("Expecting", self.num_frames_left[video_index], "more frames from video", video_index)
-
-        if self.num_frames_left[video_index] == 0:
-            print("Video {} DONE".format(video_index))
-            if self.last_view is not None:
-                ray.get(self.last_view)
-            self.signal.send.remote()
-
-        if self.viewer is not None and video_index == 0:
-            self.last_view = self.viewer.send.remote(transform)
-
-
-    def latencies(self):
-        latencies = []
-        for video in self.latencies.values():
-            for i, l in enumerate(video):
-                latencies.append((i, l))
-        return latencies
 
 class Decoder:
     def __init__(self, filename, start_frame):
@@ -129,47 +70,34 @@ class Decoder:
     def ready(self):
         return
 
-class StabilizeClient(object):
-    # Client for gRPC functionality
 
-    def __init__(self):
-        self.host = 'localhost'
-        self.server_port = 50051
+def np_array_encode(lst):
+    return np.ndarray.tobytes(lst)
 
-        # instantiate a channel
-        self.channel = grpc.insecure_channel(
-            '{}:{}'.format(self.host, self.server_port))
-
-        # bind the client and the server
-        self.stub = pb2_grpc.UnaryStub(self.channel)
-
-    def get_stabilized_frame_image(self, frame_image, prev_frame, features, trajectory, padding, transforms, frame_index):
-        # Client function to call the rpc for StabilizeRequest
-
-        frame_image_request = pb2.StabilizeRequest(frame_image=frame_image, prev_frame=prev_frame, features=features, trajectory=trajectory, padding=padding, transforms=transforms, frame_index=frame_index)
-        return self.stub.GetStabilizeResponse(frame_image_request)
+def np_array_decode(b):
+    return np.frombuffer(b)
 
 def process_videos(video_pathname, num_videos, output_filename):
     # Initializing signal
-    signal = Signal()
+    # signal = Signal()
 
     # Initializing viewer
-    viewer = Viewer(video_pathname)
+    # viewer = Viewer(video_pathname)
 
     # Initializing a sink
-    sink = Sink(signal, viewer)
+    # sink = Sink(signal, viewer)
 
-    v = cv2.VideoCapture(video_pathname)
-    num_total_frames = int(v.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = int(v.get(cv2.CAP_PROP_FPS))
+    video_in = cv2.VideoCapture(video_pathname)
+    num_total_frames = int(video_in.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = int(video_in.get(cv2.CAP_PROP_FPS))    
     print("Processing total frames", num_total_frames, "from video", video_pathname)
-    for i in range(num_videos):
-        sink.set_expected_frames(i, num_total_frames - 1)
-
+   
     decoder = Decoder(video_pathname, 0)
     start_frame = 0
+
     radius = fps
 
+    # Start of what would be process_chunk()
     # Start at `radius` before the start frame, since we need to compute a
     # moving average.
     next_to_send = start_frame
@@ -185,7 +113,7 @@ def process_videos(video_pathname, num_videos, output_filename):
     transforms = []
 
     # 3D array
-    features = []
+    features = np.empty(0)
 
     frame_timestamp = start_frame / fps
     diff = frame_timestamp - time.time()
@@ -204,12 +132,15 @@ def process_videos(video_pathname, num_videos, output_filename):
 
         frame = decoder.decode(start_frame + frame_index + 1)
 
-        result = stabilize_client.get_stabilized_frame_image(frame, prev_frame, features, trajectory, padding, transforms, frame_index)
+        print(prev_frame)
+        response = stabilize_client.stabilize(pb2.StabilizeRequest(frame_image=np_array_encode(frame), prev_frame=np_array_encode(prev_frame), features=np_array_encode(features), trajectory=list_encode(trajectory), padding=padding, transforms=list_encode(transforms), frame_index=frame_index))
 
-        prev_frame = result.stabilized_frame_image
-        features = result.features
-        trajectory = result.trajectory
-        transforms = result.transforms
+        prev_frame = response.stabilized_frame_image
+        features = pickle.loads(response.features)
+        trajectory = pickle.loads(response.trajectory)
+        transforms = pickle.loads(response.transforms)
+
+        writer.write_stabilized_video_frame_out(response.transforms?   response.stabilized_frame_image?)
 
     # TODO: Should we be calling smooth here?
     # while next_to_send < num_total_frames - 1:
@@ -247,7 +178,9 @@ def process_videos(video_pathname, num_videos, output_filename):
 
 
 def main(args):
-    print("hello world")
+    threading.Thread(target=stabilizer_server.serve).start()
+    threading.Thread(target=flow_server.serve).start()
+    threading.Thread(target=cumsum_server.serve).start()
     process_videos(args.video_path, args.num_videos, args.output_file)
 
 if __name__ == "__main__":
