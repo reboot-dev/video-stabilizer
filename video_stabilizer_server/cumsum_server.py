@@ -1,19 +1,11 @@
 import grpc
 from concurrent import futures
 import numpy as np
-from video_stabilizer_clients.cumsum_client import CumSumClient
-from video_stabilizer_clients.flow_client import FlowClient
 import video_stabilizer_proto.video_stabilizer_pb2_grpc as pb2_grpc
 import video_stabilizer_proto.video_stabilizer_pb2 as pb2
-import cv2
+import pickle5 as pickle
 
 MAX_MESSAGE_LENGTH = 100 * 1024 * 1024
-
-def list_encode(lst):
-    return bytes(lst)
-
-def list_decode(b):
-    return list(b)
 
 class CumSumService(pb2_grpc.CumSumServicer):
 
@@ -21,11 +13,11 @@ class CumSumService(pb2_grpc.CumSumServicer):
         pass
 
     def CumSum(self, request, context):
-        prev = list_decode(request.trajectory_element)
-        next = list_decode(request.transform)
+        prev = pickle.loads(request.trajectory_element)
+        next = pickle.loads(request.transform)
 
         sum = [i + j for i, j in zip(prev, next)]
-        result = {'sum':list_encode(sum)}
+        result = {'sum':pickle.dumps(sum)}
         return pb2.CumSumResponse(**result)
 
 def serve():

@@ -26,6 +26,18 @@ py_binary (
 )
 
 py_binary (
+    name = "smooth_client",
+    srcs = ["smooth_client.py"],
+    deps = [
+        "//video_stabilizer_proto:video_stabilizer_py_proto",
+        "//video_stabilizer_proto:video_stabilizer_py_grpc",
+        requirement("grpcio"),
+        requirement("grpcio-tools"),
+    ],
+    visibility = ["//visibility:public"],
+)
+
+py_binary (
     name = "stabilize_client",
     srcs = ["stabilize_client.py"],
     deps = [

@@ -190,7 +190,7 @@ class Sink:
 
             if self.num_frames_left[video_index] == 0:
                 print("Video {} DONE".format(video_index))
-                if self.last_view is not None:
+                if self.last_view is not None:Sink
                     ray.get(self.last_view)
                 self.signal.send.remote()
 

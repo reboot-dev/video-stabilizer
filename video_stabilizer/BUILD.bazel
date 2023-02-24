@@ -9,13 +9,16 @@ py_binary (
         "//video_stabilizer_server:stabilize_server",
         "//video_stabilizer_server:flow_server",
         "//video_stabilizer_server:cumsum_server",
+        "//video_stabilizer_server:smooth_server",
         "//video_stabilizer_proto:video_stabilizer_py_proto",
         "//video_stabilizer_proto:video_stabilizer_py_grpc",
         "//video_stabilizer_clients:stabilize_client",
+        "//video_stabilizer_clients:smooth_client",
         requirement("grpcio"),
         requirement("grpcio-tools"),
         requirement("opencv-python-headless"),
         requirement("numpy"),
+        requirement("pickle5"),
     ],
 )
 

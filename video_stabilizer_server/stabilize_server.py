@@ -3,23 +3,13 @@ from concurrent import futures
 import numpy as np
 from video_stabilizer_clients.cumsum_client import CumSumClient
 from video_stabilizer_clients.flow_client import FlowClient
+from video_stabilizer_clients.smooth_client import SmoothClient
 import video_stabilizer_proto.video_stabilizer_pb2_grpc as pb2_grpc
 import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 import cv2
+import pickle5 as pickle
 
 MAX_MESSAGE_LENGTH = 100 * 1024 * 1024
-
-def list_encode(lst):
-    return bytes(lst)
-
-def list_decode(b):
-    return list(b)
-
-def np_array_encode(lst):
-    return np.ndarray.tobytes(lst)
-
-def np_array_decode(b):
-    return np.frombuffer(b)
 
 class StabilizeService(pb2_grpc.VideoStabilizerServicer):
 
@@ -28,47 +18,47 @@ class StabilizeService(pb2_grpc.VideoStabilizerServicer):
 
     def Stabilize(self, request, context):
         # get the frame from the incoming request
-        frame_image = request.frame_image
-        prev_frame = request.prev_frame
-        print(np_array_decode(prev_frame))
-        features = np_array_decode(request.features)
-        trajectory= list_decode(request.trajectory)
+        frame_image = pickle.loads(request.frame_image)
+        prev_frame = pickle.loads(request.prev_frame)
+        features = pickle.loads(request.features)
+        trajectory= pickle.loads(request.trajectory)
         padding = request.padding
-        transforms = list_decode(request.transforms)
+        transforms = pickle.loads(request.transforms)
         frame_index = request.frame_index
+        radius = request.radius
+        next_to_send = request.next_to_send
 
         flow_client = FlowClient()
         cumsum_client = CumSumClient()
-        result = flow_client.flow(pb2.FlowRequest(prev_frame=prev_frame, frame_image=frame_image, features=np_array_encode(features)))
-        transform = list_decode(result.transform)
-        features = np_array_decode(result.features)
+
+        flow_response = flow_client.flow(pb2.FlowRequest(prev_frame=pickle.dumps(prev_frame), frame_image=pickle.dumps(frame_image), features=pickle.dumps(features)))
+        transform = pickle.loads(flow_response.transform)
+        features = pickle.loads(flow_response.features)
         # Periodically reset the features to track for better accuracy
         # (previous points may go off frame).
         if frame_index and frame_index % 200 == 0:
-            features = []
+            features = np.empty(0)
+        prev_frame = frame_image
         transforms.append(transform)
         if frame_index > 0:
-            result = cumsum_client.cumsum(pb2.CumSumRequest(trajectory_element=list_encode(trajectory[-1]), transform=list_encode(transform)))
-            trajectory.append(list_decode(result.sum))
+            flow_response = cumsum_client.cumsum(pb2.CumSumRequest(trajectory_element=pickle.dumps(trajectory[-1]), transform=pickle.dumps(transform)))
+            trajectory.append(pickle.loads(flow_response.sum))
         else:
             # Add padding for the first few frames.
             for _ in range(padding):
                 trajectory.append(transform)
             trajectory.append(transform)
+        smooth_client = SmoothClient()
+        if len(trajectory) == 2 * radius + 1:
+            midpoint = radius
+            smooth_response = smooth_client.smooth(pb2.SmoothRequest(transforms_element=pickle.dumps(transforms.pop(0)), trajectory_element=pickle.dumps(trajectory[midpoint]), trajectory=pickle.dumps(trajectory)))
+            final_transform = pickle.loads(smooth_response.final_transform)
+            trajectory.pop(0)
 
-        # TODO: Should I just call smooth here every time?
-        # if len(trajectory) == 2 * radius + 1:
-        #     midpoint = radius
-        #     final_transform = smooth.options(resources={
-        #         resource: 0.001
-        #         }).remote(transforms.pop(0), trajectory[midpoint], *trajectory)
-        #     trajectory.pop(0)
-
-        #     sink.send.remote(next_to_send, final_transform, frame_timestamps.pop(0))
-        #     next_to_send += 1
-
-        # result = {'stabilized_frame_image': final_transform, 'features': features, 'trajectory': trajectory, 'transforms': transforms}
-        result = {'stabilized_frame_image': final_transform, 'features': list_encode(features), 'trajectory': list_encode(features), 'transforms': list_encode(transforms)}
+            next_to_send += 1
+            result = {'final_transform': pickle.dumps(final_transform), 'features': pickle.dumps(features), 'trajectory': pickle.dumps(trajectory), 'transforms': pickle.dumps(transforms), 'next_to_send':next_to_send}
+        else:
+            result = {'final_transform': pickle.dumps([]), 'features': pickle.dumps(features), 'trajectory': pickle.dumps(trajectory), 'transforms': pickle.dumps(transforms), 'next_to_send':next_to_send}
         return pb2.StabilizeResponse(**result)
 
 def serve():
