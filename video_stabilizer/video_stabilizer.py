@@ -12,10 +12,12 @@ from collections import defaultdict
 
 
 class Writer:
-    def __init__(self, video_pathname):
+    def __init__(self, video_pathname,video_capture,video_writer):
         # TODO: need to change this to be a different video pathname, let's use "stabilized_" + video_pathname
-        self.video_pathname = video_pathname
-        self.v = cv2.VideoCapture(video_pathname)
+        # self.video_pathname = video_pathname
+        # self.v = cv2.VideoCapture(video_pathname)
+        self.v = video_capture
+        self.w = video_writer
 
     def write_stabilized_video_frame_out(self, transform):
         success, frame = self.v.read() 
@@ -40,17 +42,20 @@ class Writer:
 
         # Fix border artifacts
         frame_stabilized = fixBorder(frame_stabilized) 
+        
+        # Write the stabilized frame
+        self.w.write(frame_stabilized)
 
         # Write the frame to the file
-        frame_out = cv2.hconcat([frame, frame_stabilized])
+        # frame_out = cv2.hconcat([frame, frame_stabilized])
 
         ## If the image is too big, resize it.
-        if(frame_out.shape[1] > 1920): 
-            frame_out = cv2.resize(frame_out, (frame_out.shape[1]//2, frame_out.shape[0]//2));
+        # if(frame_out.shape[1] > 1920): 
+        #     frame_out = cv2.resize(frame_out, (frame_out.shape[1]//2, frame_out.shape[0]//2));
         
         # cv2.imshow("Before and After", frame_out)
         # cv2.waitKey(1)
-        out.write(frame_out)
+        # out.write(frame_out)
 
 
 class Decoder:
@@ -70,6 +75,12 @@ class Decoder:
     def ready(self):
         return
 
+def fixBorder(frame):
+  s = frame.shape
+  # Scale the image 4% without moving the center
+  T = cv2.getRotationMatrix2D((s[1]/2, s[0]/2), 0, 1.04)
+  frame = cv2.warpAffine(frame, T, (s[1], s[0]))
+  return frame
 
 def np_array_encode(lst):
     return np.ndarray.tobytes(lst)
@@ -91,6 +102,15 @@ def process_videos(video_pathname, num_videos, output_filename):
     num_total_frames = int(video_in.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(video_in.get(cv2.CAP_PROP_FPS))    
     print("Processing total frames", num_total_frames, "from video", video_pathname)
+
+    # Set up Writer instance
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # fps = int(video_in.get(cv2.CAP_PROP_FPS))
+    width = int(video_in.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(video_in.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    video_writer = cv2.VideoWriter("stablized_" + video_pathname, fourcc,
+                     fps, (width, height))
+    writer = Writer("stablized_" + video_pathname, video_in, video_writer)
    
     decoder = Decoder(video_pathname, 0)
     start_frame = 0
@@ -140,6 +160,7 @@ def process_videos(video_pathname, num_videos, output_filename):
         trajectory = pickle.loads(response.trajectory)
         transforms = pickle.loads(response.transforms)
 
+        
         writer.write_stabilized_video_frame_out(response.transforms?   response.stabilized_frame_image?)
 
     # TODO: Should we be calling smooth here?
