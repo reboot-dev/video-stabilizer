@@ -21,7 +21,7 @@ def fixBorder(frame):
   return frame
 
 class Writer:
-    def __init__(self, video_pathname,video_capture,video_writer):
+    def __init__(self, video_pathname, video_capture, video_writer):
         # TODO: need to change this to be a different video pathname, let's use "stabilized_" + video_pathname
         # self.video_pathname = video_pathname
         # self.v = cv2.VideoCapture(video_pathname)
@@ -105,9 +105,9 @@ def process_videos(video_pathname, num_videos, output_filename):
     # fps = int(video_in.get(cv2.CAP_PROP_FPS))
     width = int(video_in.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(video_in.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    video_writer = cv2.VideoWriter("stablized_" + video_pathname, fourcc,
+    video_writer = cv2.VideoWriter("/workspaces/video-stabilizer/stabilized_video/video.mp4", fourcc,
                      fps, (width, height))
-    writer = Writer("stablized_" + video_pathname, video_in, video_writer)
+    writer = Writer("/workspaces/video-stabilizer/stabilized_video/video.mp4", video_in, video_writer)
    
     decoder = Decoder(video_pathname, 0)
     start_frame = 0
@@ -166,8 +166,7 @@ def process_videos(video_pathname, num_videos, output_filename):
         next_to_send = stabilize_response.next_to_send
 
         if final_transform != []:
-            # writer.write_stabilized_video_frame_out(final_transform)
-            print("temp")
+            writer.write_stabilized_video_frame_out(final_transform)
 
     smooth_client = SmoothClient()
     while next_to_send < num_total_frames - 1:
@@ -181,7 +180,7 @@ def process_videos(video_pathname, num_videos, output_filename):
         final_transform = pickle.loads(smooth_response.final_transform)
         trajectory.pop(0)
 
-        # writer.write_stabilized_video_frame_out(final_transform)
+        writer.write_stabilized_video_frame_out(final_transform)
         next_to_send += 1
 
     print("finished stabilizing")
