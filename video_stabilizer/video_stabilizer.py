@@ -2,14 +2,23 @@ import time
 import cv2
 import threading
 from video_stabilizer_clients.stabilize_client import StabilizeClient
+from video_stabilizer_clients.smooth_client import SmoothClient
 import video_stabilizer_server.stabilize_server as stabilizer_server
 import video_stabilizer_server.cumsum_server as cumsum_server 
 import video_stabilizer_server.flow_server as flow_server 
+import video_stabilizer_server.smooth_server as smooth_server 
 import video_stabilizer_proto.video_stabilizer_pb2_grpc as pb2_grpc
 import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 import numpy as np
 from collections import defaultdict
+import pickle5 as pickle
 
+def fixBorder(frame):
+  s = frame.shape
+  # Scale the image 4% without moving the center
+  T = cv2.getRotationMatrix2D((s[1]/2, s[0]/2), 0, 1.04)
+  frame = cv2.warpAffine(frame, T, (s[1], s[0]))
+  return frame
 
 class Writer:
     def __init__(self, video_pathname,video_capture,video_writer):
@@ -68,26 +77,14 @@ class Decoder:
             print("next frame", frame, ", at frame", self.v.get(cv2.CAP_PROP_POS_FRAMES))
             self.v.set(cv2.CAP_PROP_POS_FRAMES, frame)
         grabbed, frame = self.v.read()
-        assert grabbed
+        if not grabbed:
+            return []
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
         return frame
 
     def ready(self):
         return
-
-def fixBorder(frame):
-  s = frame.shape
-  # Scale the image 4% without moving the center
-  T = cv2.getRotationMatrix2D((s[1]/2, s[0]/2), 0, 1.04)
-  frame = cv2.warpAffine(frame, T, (s[1], s[0]))
-  return frame
-
-def np_array_encode(lst):
-    return np.ndarray.tobytes(lst)
-
-def np_array_decode(b):
-    return np.frombuffer(b)
-
+        
 def process_videos(video_pathname, num_videos, output_filename):
     # Initializing signal
     # signal = Signal()
@@ -142,6 +139,8 @@ def process_videos(video_pathname, num_videos, output_filename):
     frame_timestamps.append(frame_timestamp)
     prev_frame = decoder.decode(start_frame)
 
+    count = 0
+
     stabilize_client = StabilizeClient()
     for frame_index in range(start_frame, num_total_frames - 1):
         frame_timestamp = (start_frame + frame_index + 1) / fps
@@ -152,56 +151,46 @@ def process_videos(video_pathname, num_videos, output_filename):
 
         frame = decoder.decode(start_frame + frame_index + 1)
 
-        print(prev_frame)
-        response = stabilize_client.stabilize(pb2.StabilizeRequest(frame_image=np_array_encode(frame), prev_frame=np_array_encode(prev_frame), features=np_array_encode(features), trajectory=list_encode(trajectory), padding=padding, transforms=list_encode(transforms), frame_index=frame_index))
+        if frame == []:
+            break
 
-        prev_frame = response.stabilized_frame_image
-        features = pickle.loads(response.features)
-        trajectory = pickle.loads(response.trajectory)
-        transforms = pickle.loads(response.transforms)
+        print(count)
+        count = count + 1
 
-        
-        writer.write_stabilized_video_frame_out(response.transforms?   response.stabilized_frame_image?)
+        stabilize_response = stabilize_client.stabilize(pb2.StabilizeRequest(frame_image=pickle.dumps(frame), prev_frame=pickle.dumps(prev_frame), features=pickle.dumps(features), trajectory=pickle.dumps(trajectory), padding=padding, transforms=pickle.dumps(transforms), frame_index=frame_index, radius=radius, next_to_send=next_to_send))
 
-    # TODO: Should we be calling smooth here?
-    # while next_to_send < num_total_frames - 1:
-    #     trajectory.append(trajectory[-1])
-    #     midpoint = radius
-    #     final_transform = smooth.options(resources={
-    #         resource: 0.001
-    #         }).remote(transforms.pop(0), trajectory[midpoint], *trajectory)
-    #     trajectory.pop(0)
+        final_transform = pickle.loads(stabilize_response.final_transform)
+        features = pickle.loads(stabilize_response.features)
+        trajectory = pickle.loads(stabilize_response.trajectory)
+        transforms = pickle.loads(stabilize_response.transforms)
+        next_to_send = stabilize_response.next_to_send
 
-    #     final = sink.send.remote(next_to_send, final_transform,
-    #             frame_timestamps.pop(0))
-    #     next_to_send += 1
+        if final_transform != []:
+            # writer.write_stabilized_video_frame_out(final_transform)
+            print("temp")
 
+    smooth_client = SmoothClient()
+    while next_to_send < num_total_frames - 1:
+        trajectory.append(trajectory[-1])
+        midpoint = radius
 
-    # Wait for all video frames to complete
-    # ready = 0
-    # while ready != num_videos:
-    #     time.sleep(1)
-    #     ready = ray.get(signal.wait.remote())
+        if len(transforms) == 0:
+            break
 
-    # latencies = []
-    # for sink in sinks:
-    #     latencies += ray.get(sink.latencies.remote())
-    # if output_filename:
-    #     with open(output_filename, 'w') as f:
-    #         for t, l in latencies:
-    #             f.write("{} {}\n".format(t, l))
-    # else:
-    #     for latency in latencies:
-    #         print(latency)
-    # latencies = [l for _, l in latencies]
-    # print("Mean latency:", np.mean(latencies))
-    # print("Max latency:", np.max(latencies))
+        smooth_response = smooth_client.smooth(pb2.SmoothRequest(transforms_element=pickle.dumps(transforms.pop(0)), trajectory_element=pickle.dumps(trajectory[midpoint]), trajectory=pickle.dumps(trajectory)))
+        final_transform = pickle.loads(smooth_response.final_transform)
+        trajectory.pop(0)
 
+        # writer.write_stabilized_video_frame_out(final_transform)
+        next_to_send += 1
+
+    print("finished stabilizing")
 
 def main(args):
     threading.Thread(target=stabilizer_server.serve).start()
     threading.Thread(target=flow_server.serve).start()
     threading.Thread(target=cumsum_server.serve).start()
+    threading.Thread(target=smooth_server.serve).start()
     process_videos(args.video_path, args.num_videos, args.output_file)
 
 if __name__ == "__main__":
