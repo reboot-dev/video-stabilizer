@@ -6,7 +6,8 @@ import time
 import json
 import threading
 from collections import defaultdict
-from ray import profiling
+
+#from ray import profiling
 from ray.experimental.internal_kv import _internal_kv_put, \
     _internal_kv_get
 import ray.cloudpickle as pickle
@@ -54,7 +55,7 @@ class Decoder:
 
 @ray.remote
 def flow(prev_frame, frame, p0):
-    with ray.profiling.profile("flow"):
+    #with ray.profiling.profile("flow"):
         if p0 is None or p0.shape[0] < 100:
             p0 = cv2.goodFeaturesToTrack(prev_frame,
                                          maxCorners=200,
@@ -92,7 +93,7 @@ def flow(prev_frame, frame, p0):
 
 @ray.remote
 def cumsum(prev, next, checkpoint_key):
-    with ray.profiling.profile("cumsum"):
+    #with ray.profiling.profile("cumsum"):
         sum = [i + j for i, j in zip(prev, next)]
         if checkpoint_key is not None:
             ray.experimental.internal_kv._internal_kv_put(checkpoint_key, "{} {} {}".format(*sum))
@@ -102,7 +103,7 @@ def cumsum(prev, next, checkpoint_key):
 
 @ray.remote
 def smooth(transform, point, *window):
-    with ray.profiling.profile("smooth"):
+    #with ray.profiling.profile("smooth"):
         mean = np.mean(window, axis=0)
         smoothed = mean - point + transform
         return smoothed
@@ -121,6 +122,12 @@ class Viewer:
     def __init__(self, video_pathname):
         self.video_pathname = video_pathname
         self.v = cv2.VideoCapture(video_pathname)
+        fps = self.v.get(cv2.CAP_PROP_FPS)
+        w = int(self.v.get(cv2.CAP_PROP_FRAME_WIDTH)) 
+        h = int(self.v.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        self.w = cv2.VideoWriter("video_example/stabilized_husky_ray.mp4", fourcc,
+                     fps, (w, h))
 
     def send(self, transform):
         success, frame = self.v.read() 
@@ -152,6 +159,8 @@ class Viewer:
         ## If the image is too big, resize it.
         if(frame_out.shape[1] > 1920): 
             frame_out = cv2.resize(frame_out, (frame_out.shape[1]//2, frame_out.shape[0]//2));
+
+        self.w.write(frame_stabilized)
         
         cv2.imshow("Before and After", frame_out)
         cv2.waitKey(1)
@@ -177,7 +186,7 @@ class Sink:
         print("Expecting", self.num_frames_left[video_index], "total frames from video", video_index)
 
     def send(self, video_index, frame_index, transform, timestamp):
-        with ray.profiling.profile("Sink.send"):
+        #with ray.profiling.profile("Sink.send"):
             if frame_index < len(self.latencies[video_index]):
                 return
             assert frame_index == len(self.latencies[video_index]), frame_index
@@ -190,7 +199,7 @@ class Sink:
 
             if self.num_frames_left[video_index] == 0:
                 print("Video {} DONE".format(video_index))
-                if self.last_view is not None:Sink
+                if self.last_view is not None: #Sink
                     ray.get(self.last_view)
                 self.signal.send.remote()
 
@@ -227,7 +236,7 @@ def process_chunk(video_index, video_pathname, sink, num_frames, fps, resource, 
     # Check for a checkpoint.
     start_frame = 0
     radius = fps
-    checkpoint_frame = ray.experimental.internal_kv._internal_kv_get(video_index)
+    checkpoint_frame = None #ray.experimental.internal_kv._internal_kv_get(video_index)
     trajectory = []
     if checkpoint_frame is not None:
         checkpoint_frame = int(checkpoint_frame)
@@ -349,6 +358,10 @@ def process_videos(video_pathname, num_videos, output_filename, view,
     v = cv2.VideoCapture(video_pathname)
     num_total_frames = int(min(v.get(cv2.CAP_PROP_FRAME_COUNT), max_frames))
     fps = int(v.get(cv2.CAP_PROP_FPS))
+    # sucess,frame = v.read()
+    # print(f"sucess val {sucess}")
+    # cv2.imshow("frame",frame)
+    # print(f"fps {fps} pathname {video_pathname}")
     print("Processing total frames", num_total_frames, "from video", video_pathname)
     for i in range(num_videos):
         ray.get(sinks[i % len(sinks)].set_expected_frames.remote(i, num_total_frames - 1))
@@ -439,7 +452,7 @@ def main(args):
     import socket
     head_ip = socket.gethostbyname(socket.gethostname())
     head_node_resource = "node:{}".format(head_ip)
-
+    
     if args.local:
         ray.init(resources={head_node_resource: 1})
     else:
