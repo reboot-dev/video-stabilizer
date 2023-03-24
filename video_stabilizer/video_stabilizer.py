@@ -12,6 +12,10 @@ import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 import numpy as np
 from collections import defaultdict
 import pickle5 as pickle
+import sys
+from minio import Minio
+from io import BytesIO
+
 
 def fixBorder(frame):
   s = frame.shape
@@ -27,8 +31,12 @@ class Writer:
         # self.v = cv2.VideoCapture(video_pathname)
         self.v = video_capture
         self.w = video_writer
+        self.client = Minio('play.min.io',
+               access_key='Q3AM3UQ867SPQQA43P2F',
+               secret_key='zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG',
+               secure=True)
 
-    def write_stabilized_video_frame_out(self, transform):
+    def write_stabilized_video_frame_out(self, transform, process_mode):
         success, frame = self.v.read() 
         assert success
 
@@ -52,8 +60,28 @@ class Writer:
         # Fix border artifacts
         frame_stabilized = fixBorder(frame_stabilized) 
         
+        if process_mode == 0:
         # Write the stabilized frame
-        self.w.write(frame_stabilized)
+            self.w.write(frame_stabilized)
+        else:
+            # Create a BytesIO object to hold the frame data
+            bytes_io = BytesIO()
+
+            # Write the frame data to the BytesIO object
+            bytes_io.write(frame_stabilized.tobytes())
+
+            # Set the BytesIO object's position to the beginning
+            bytes_io.seek(0)
+
+            # create minio bucket
+            found = self.client.bucket_exists("respect")
+            if not found:
+                self.client.make_bucket("respect")
+
+            # Upload the frame to MinIO as a new object in respect bucket
+            self.client.put_object(bucket_name='respect', object_name=f'frame_{self.v.get(cv2.CAP_PROP_POS_FRAMES)}.mp4', data=bytes_io, length=bytes_io.getbuffer().nbytes)
+
+
 
         # Write the frame to the file
         # frame_out = cv2.hconcat([frame, frame_stabilized])
@@ -65,6 +93,7 @@ class Writer:
         # cv2.imshow("Before and After", frame_out)
         # cv2.waitKey(1)
         # out.write(frame_out)
+
 
 
 class Decoder:
@@ -85,7 +114,7 @@ class Decoder:
     def ready(self):
         return
         
-def process_videos(video_pathname, num_videos, output_filename):
+def process_videos(video_pathname, num_videos, output_filename,process_mode):
     # Initializing signal
     # signal = Signal()
 
@@ -154,7 +183,7 @@ def process_videos(video_pathname, num_videos, output_filename):
         if frame == []:
             break
 
-        print(count)
+        # print(count)
         count = count + 1
 
         stabilize_response = stabilize_client.stabilize(pb2.StabilizeRequest(frame_image=pickle.dumps(frame), prev_frame=pickle.dumps(prev_frame), features=pickle.dumps(features), trajectory=pickle.dumps(trajectory), padding=padding, transforms=pickle.dumps(transforms), frame_index=frame_index, radius=radius, next_to_send=next_to_send))
@@ -165,8 +194,14 @@ def process_videos(video_pathname, num_videos, output_filename):
         transforms = pickle.loads(stabilize_response.transforms)
         next_to_send = stabilize_response.next_to_send
 
+        # print(f"stab response size {sys.getsizeof(stabilize_response)}")
+        # print(sys.getsizeof(final_transform))
+        # print(sys.getsizeof(trajectory))
+        # print(sys.getsizeof(transforms))
+        # print(sys.getsizeof(next_to_send))
+
         if final_transform != []:
-            writer.write_stabilized_video_frame_out(final_transform)
+            writer.write_stabilized_video_frame_out(final_transform,process_mode)
 
     smooth_client = SmoothClient()
     while next_to_send < num_total_frames - 1:
@@ -183,6 +218,12 @@ def process_videos(video_pathname, num_videos, output_filename):
         writer.write_stabilized_video_frame_out(final_transform)
         next_to_send += 1
 
+    # Release the capture and writer objects
+    video_in.release()
+    video_writer.release()
+
+    # Close all windows
+    cv2.destroyAllWindows()
     print("finished stabilizing")
 
 def main(args):
@@ -190,7 +231,7 @@ def main(args):
     threading.Thread(target=flow_server.serve).start()
     threading.Thread(target=cumsum_server.serve).start()
     threading.Thread(target=smooth_server.serve).start()
-    process_videos(args.video_path, args.num_videos, args.output_file)
+    process_videos(args.video_path, args.num_videos, args.output_file,args.process_mode)
 
 if __name__ == "__main__":
     import argparse
@@ -199,6 +240,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-videos", required=True, type=int)
     parser.add_argument("--video-path", required=True, type=str)
     parser.add_argument("--output-file", type=str)
+    parser.add_argument("--process-mode", required=True,type=int)
     inputs = parser.parse_args()
     main(inputs)
     

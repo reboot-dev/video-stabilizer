@@ -1,0 +1,13 @@
+load("@python_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_binary")
+
+
+py_binary (
+    name = "video_stabilizer_ray",
+    srcs = ["video_stabilizer_ray.py"],
+    deps = [
+        requirement("opencv-python-headless"),
+        requirement("numpy"),
+        requirement("ray"),
+    ],
+)
