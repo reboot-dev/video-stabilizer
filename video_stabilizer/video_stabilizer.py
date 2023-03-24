@@ -12,6 +12,7 @@ import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 import numpy as np
 from collections import defaultdict
 import pickle5 as pickle
+import sys
 
 def fixBorder(frame):
   s = frame.shape
@@ -159,11 +160,21 @@ def process_videos(video_pathname, num_videos, output_filename):
 
         stabilize_response = stabilize_client.stabilize(pb2.StabilizeRequest(frame_image=pickle.dumps(frame), prev_frame=pickle.dumps(prev_frame), features=pickle.dumps(features), trajectory=pickle.dumps(trajectory), padding=padding, transforms=pickle.dumps(transforms), frame_index=frame_index, radius=radius, next_to_send=next_to_send))
 
+
         final_transform = pickle.loads(stabilize_response.final_transform)
         features = pickle.loads(stabilize_response.features)
         trajectory = pickle.loads(stabilize_response.trajectory)
         transforms = pickle.loads(stabilize_response.transforms)
         next_to_send = stabilize_response.next_to_send
+
+         sys.getsizeof(final_transform)
+         sys.getsizeof(features)
+         sys.getsizeof(trajectory)
+         sys.getsizeof(transforms)
+         sys.getsizeof(next_to_send)
+         
+
+        
 
         if final_transform != []:
             writer.write_stabilized_video_frame_out(final_transform)
@@ -186,10 +197,13 @@ def process_videos(video_pathname, num_videos, output_filename):
     print("finished stabilizing")
 
 def main(args):
+    global process_category
+    process_category = args.process_category
     threading.Thread(target=stabilizer_server.serve).start()
     threading.Thread(target=flow_server.serve).start()
     threading.Thread(target=cumsum_server.serve).start()
     threading.Thread(target=smooth_server.serve).start()
+    
     process_videos(args.video_path, args.num_videos, args.output_file)
 
 if __name__ == "__main__":
@@ -199,6 +213,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-videos", required=True, type=int)
     parser.add_argument("--video-path", required=True, type=str)
     parser.add_argument("--output-file", type=str)
+    parser.add_argument("--process-category", type=int)
     inputs = parser.parse_args()
     main(inputs)
     

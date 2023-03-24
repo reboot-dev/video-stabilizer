@@ -24,6 +24,7 @@ message StabilizeResponse {
  bytes trajectory = 3;
  bytes transforms = 4;
  int32 next_to_send = 5;
+//  string url = 6
 }
 
 service Flow {
