@@ -39,6 +39,7 @@ class Writer:
     def write_stabilized_video_frame_out(self, transform, process_mode):
         success, frame = self.v.read() 
         assert success
+        print(len(frame.tobytes()))
 
         # Extract transformations from the new transformation array
         dx, dy, da = transform
@@ -65,13 +66,18 @@ class Writer:
             self.w.write(frame_stabilized)
         else:
             # Create a BytesIO object to hold the frame data
-            bytes_io = BytesIO()
+            # bytes_io = BytesIO()
 
+            
             # Write the frame data to the BytesIO object
-            bytes_io.write(frame_stabilized.tobytes())
+            bytes = frame_stabilized.tobytes()
+
+            bytes_io = BytesIO(bytes)
+            # bytes_io.write(bytes)
+            
 
             # Set the BytesIO object's position to the beginning
-            bytes_io.seek(0)
+            # bytes_io.seek(0)
 
             # create minio bucket
             found = self.client.bucket_exists("respect")
@@ -79,7 +85,8 @@ class Writer:
                 self.client.make_bucket("respect")
 
             # Upload the frame to MinIO as a new object in respect bucket
-            self.client.put_object(bucket_name='respect', object_name=f'frame_{self.v.get(cv2.CAP_PROP_POS_FRAMES)}.mp4', data=bytes_io, length=bytes_io.getbuffer().nbytes)
+            # length=bytes_io.getbuffer().nbytes
+            self.client.put_object(bucket_name='respect', object_name=f'frame_{self.v.get(cv2.CAP_PROP_POS_FRAMES)}', data=bytes_io, length=len(bytes))
 
 
 
@@ -170,7 +177,7 @@ def process_videos(video_pathname, num_videos, output_filename,process_mode):
 
     count = 0
 
-    stabilize_client = StabilizeClient()
+    stabilizer = Stabilizer(process_mode)
     for frame_index in range(start_frame, num_total_frames - 1):
         frame_timestamp = (start_frame + frame_index + 1) / fps
         diff = frame_timestamp - time.time()
@@ -186,13 +193,7 @@ def process_videos(video_pathname, num_videos, output_filename,process_mode):
         # print(count)
         count = count + 1
 
-        stabilize_response = stabilize_client.stabilize(pb2.StabilizeRequest(frame_image=pickle.dumps(frame), prev_frame=pickle.dumps(prev_frame), features=pickle.dumps(features), trajectory=pickle.dumps(trajectory), padding=padding, transforms=pickle.dumps(transforms), frame_index=frame_index, radius=radius, next_to_send=next_to_send))
-
-        final_transform = pickle.loads(stabilize_response.final_transform)
-        features = pickle.loads(stabilize_response.features)
-        trajectory = pickle.loads(stabilize_response.trajectory)
-        transforms = pickle.loads(stabilize_response.transforms)
-        next_to_send = stabilize_response.next_to_send
+        (final_transform,features,trajectory,transforms,next_to_send) = stabilizer.stabilize(frame_image=(frame), prev_frame=prev_frame, features=features, trajectory=trajectory, padding=padding, transforms=transforms, frame_index=frame_index, radius=radius, next_to_send=next_to_send)
 
         # print(f"stab response size {sys.getsizeof(stabilize_response)}")
         # print(sys.getsizeof(final_transform))

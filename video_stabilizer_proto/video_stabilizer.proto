@@ -7,7 +7,11 @@ service VideoStabilizer {
 }
 
 message StabilizeRequest {
- bytes frame_image = 1;
+oneof frame_image_oneof { // do this for all bytes 
+   bytes frame_image = 1;
+   string frame_image_url = 2;
+   // respect reference = 3;
+}   
  bytes prev_frame = 2;
  bytes features = 3;
  bytes trajectory = 4;
@@ -18,7 +22,7 @@ message StabilizeRequest {
  int32 next_to_send = 9;
 }
 
-message StabilizeResponse {
+message StabilizeResponse { // same as stabilize request
  bytes final_transform = 1;
  bytes features = 2;
  bytes trajectory = 3;
