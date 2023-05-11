@@ -1,8 +1,8 @@
 import time
 import cv2
 import threading
-from video_stabilizer_clients.stabilize_client import StabilizeClient
-from video_stabilizer_clients.smooth_client import SmoothClient
+from video_stabilizer_wrappers.stabilizer import Stabilizer
+from video_stabilizer_wrappers.smooth import Smooth
 import video_stabilizer_server.stabilize_server as stabilizer_server
 import video_stabilizer_server.cumsum_server as cumsum_server 
 import video_stabilizer_server.flow_server as flow_server 
@@ -193,7 +193,7 @@ def process_videos(video_pathname, num_videos, output_filename,process_mode):
         # print(count)
         count = count + 1
 
-        (final_transform,features,trajectory,transforms,next_to_send) = stabilizer.stabilize(frame_image=(frame), prev_frame=prev_frame, features=features, trajectory=trajectory, padding=padding, transforms=transforms, frame_index=frame_index, radius=radius, next_to_send=next_to_send)
+        (final_transform,features,trajectory,transforms,next_to_send) = stabilizer.stabilize(frame_image=frame, prev_frame=prev_frame, features=features, trajectory=trajectory, padding=padding, transforms=transforms, frame_index=frame_index, radius=radius, next_to_send=next_to_send)
 
         # print(f"stab response size {sys.getsizeof(stabilize_response)}")
         # print(sys.getsizeof(final_transform))
@@ -204,7 +204,7 @@ def process_videos(video_pathname, num_videos, output_filename,process_mode):
         if final_transform != []:
             writer.write_stabilized_video_frame_out(final_transform,process_mode)
 
-    smooth_client = SmoothClient()
+    smooth = Smooth()
     while next_to_send < num_total_frames - 1:
         trajectory.append(trajectory[-1])
         midpoint = radius
@@ -212,8 +212,7 @@ def process_videos(video_pathname, num_videos, output_filename,process_mode):
         if len(transforms) == 0:
             break
 
-        smooth_response = smooth_client.smooth(pb2.SmoothRequest(transforms_element=pickle.dumps(transforms.pop(0)), trajectory_element=pickle.dumps(trajectory[midpoint]), trajectory=pickle.dumps(trajectory)))
-        final_transform = pickle.loads(smooth_response.final_transform)
+        final_transform = smooth.smooth(transforms_element=transforms.pop(0), trajectory_element=trajectory[midpoint], trajectory=trajectory)
         trajectory.pop(0)
 
         writer.write_stabilized_video_frame_out(final_transform)

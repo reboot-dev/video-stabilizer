@@ -1,5 +1,5 @@
 import pickle
-from video_stabilizer_proto.video_stabilizer_pb2 import StabilizeRequest
+import video_stabilizer_proto.video_stabilizer_pb2 as pb2
 from video_stabilizer_clients.stabilize_client import StabilizeClient
 
 class Stabilizer(object):
@@ -13,7 +13,7 @@ class Stabilizer(object):
         else:
             raise NotImplementedError
         
-    def stabilizegrpc(self, frame, prev_frame, features, trajectory, padding, transforms, frame_index, radius, next_to_send):
+    def stabilize_grpc(self, frame, prev_frame, features, trajectory, padding, transforms, frame_index, radius, next_to_send):
         # convert arguments to bytes
         frame = pickle.dumps(frame)
         prev_frame = pickle.dumps(prev_frame)
@@ -23,7 +23,7 @@ class Stabilizer(object):
 
         # call the client and get the response
         response = self.client.stabilize(
-            StabilizeRequest(
+            pb2.StabilizeRequest(
                 frame_image=frame,
                 prev_frame=prev_frame,
                 features=features,
@@ -52,7 +52,7 @@ class Stabilizer(object):
 
         # call the client and get the response
         response = self.client.stabilize(
-            StabilizeRequest(
+            pb2.StabilizeRequest(
                 frame_imag_url=frame_url,
                 prev_frame=prev_frame,
                 features=features,
