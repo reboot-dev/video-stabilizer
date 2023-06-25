@@ -12,6 +12,8 @@ py_binary (
         requirement("opencv-python-headless"),
         requirement("numpy"),
         requirement("pickle5"),
+        requirement("requests"),
+        requirement("minio"),
     ],
     visibility = ["//visibility:public"]
 )
@@ -50,6 +52,8 @@ py_binary (
         requirement("grpcio-tools"),
         requirement("numpy"),
         requirement("pickle5"),
+        requirement("requests"),
+        requirement("minio"),
     ],
     visibility = ["//visibility:public"]
 )

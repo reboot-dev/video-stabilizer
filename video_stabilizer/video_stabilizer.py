@@ -190,21 +190,14 @@ def process_videos(video_pathname, num_videos, output_filename,process_mode):
         if frame == []:
             break
 
-        # print(count)
         count = count + 1
 
         (final_transform,features,trajectory,transforms,next_to_send) = stabilizer.stabilize(frame_image=frame, prev_frame=prev_frame, features=features, trajectory=trajectory, padding=padding, transforms=transforms, frame_index=frame_index, radius=radius, next_to_send=next_to_send)
 
-        # print(f"stab response size {sys.getsizeof(stabilize_response)}")
-        # print(sys.getsizeof(final_transform))
-        # print(sys.getsizeof(trajectory))
-        # print(sys.getsizeof(transforms))
-        # print(sys.getsizeof(next_to_send))
-
         if final_transform != []:
             writer.write_stabilized_video_frame_out(final_transform,process_mode)
 
-    smooth = Smooth()
+    smooth = Smooth(process_mode)
     while next_to_send < num_total_frames - 1:
         trajectory.append(trajectory[-1])
         midpoint = radius
