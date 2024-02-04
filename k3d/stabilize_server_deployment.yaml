@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stabilize-server-grpc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stabilize-server-deployment
+  namespace: stabilize-server-grpc
+spec:
+  selector:
+    matchLabels:
+      app: stabilize-server
+  template:
+    metadata:
+      labels:
+        app: stabilize-server
+    spec:
+      containers:
+      - name: stabilize-server-container
+        image: stabilize-server:latest
+        ports:
+        - containerPort: 50054

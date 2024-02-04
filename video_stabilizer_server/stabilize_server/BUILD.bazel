@@ -1,0 +1,18 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+load("@python_deps//:requirements.bzl", "requirement")
+
+py_binary (
+    name = "stabilize_server",
+    srcs = ["stabilize_server.py"],
+    deps = [
+        "//video_stabilizer_clients:flow_client",
+        "//video_stabilizer_clients:cumsum_client",
+        "//video_stabilizer_clients:smooth_client",
+        requirement("grpcio"),
+        requirement("grpcio-tools"),
+        requirement("opencv-python-headless"),
+        requirement("numpy"),
+        requirement("pickle5"),
+    ],
+    visibility = ["//visibility:public"]
+)

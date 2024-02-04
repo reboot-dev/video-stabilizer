@@ -1,0 +1,4 @@
+apiVersion: k3d.io/v1alpha2
+kind: Simple
+name: video-stabilizer-cluster
+agents: 5

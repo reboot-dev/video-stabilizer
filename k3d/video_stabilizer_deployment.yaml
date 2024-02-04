@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: video-stabilizer-grpc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-stabilizer-deployment
+  namespace: video-stabilizer-grpc
+spec:
+  selector:
+    matchLabels:
+      app: video-stabilizer
+  template:
+    metadata:
+      labels:
+        app: video-stabilizer
+    spec:
+      containers:
+      - name: video-stabilizer-container
+        image: video-stabilizer:latest
+        ports:
+        - containerPort: 50055

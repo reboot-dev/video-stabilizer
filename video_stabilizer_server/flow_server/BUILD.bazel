@@ -1,0 +1,18 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+load("@python_deps//:requirements.bzl", "requirement")
+
+py_binary (
+    name = "flow_server",
+    srcs = ["flow_server.py"],
+    deps = [
+        "//video_stabilizer_proto:video_stabilizer_py_proto",
+        "//video_stabilizer_proto:video_stabilizer_py_grpc",
+        requirement("grpcio"),
+        requirement("grpcio-tools"),
+        requirement("opencv-python-headless"),
+        requirement("numpy"),
+        requirement("pickle5"),
+    ],
+    visibility = ["//visibility:public"],
+    main = "flow_server.py",
+)

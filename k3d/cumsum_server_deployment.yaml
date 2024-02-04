@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cumsum-server-grpc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cumsum-server-deployment
+  namespace: cumsum-server-grpc
+spec:
+  selector:
+    matchLabels:
+      app: cumsum-server
+  template:
+    metadata:
+      labels:
+        app: cumsum-server
+    spec:
+      containers:
+      - name: cumsum-server-container
+        image: cumsum-server:latest
+        ports:
+        - containerPort: 50051

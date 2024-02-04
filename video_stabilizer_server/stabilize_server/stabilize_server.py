@@ -58,7 +58,7 @@ class StabilizeService(pb2_grpc.VideoStabilizerServicer):
             next_to_send += 1
             result = {'final_transform': pickle.dumps(final_transform), 'features': pickle.dumps(features), 'trajectory': pickle.dumps(trajectory), 'transforms': pickle.dumps(transforms), 'next_to_send':next_to_send}
         else:
-            result = {'final_transform': pickle.dumps([]), 'features': pickle.dumps(features), 'trajectory': pickle.dumps(trajectory), 'transforms': pickle.dumps(transforms), 'next_to_send':next_to_send}
+            result = {'final_transform': pickle.dumps(None), 'features': pickle.dumps(features), 'trajectory': pickle.dumps(trajectory), 'transforms': pickle.dumps(transforms), 'next_to_send':next_to_send}
         return pb2.StabilizeResponse(**result)
 
 def serve():

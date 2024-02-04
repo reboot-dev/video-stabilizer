@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flow-server-grpc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flow-server-deployment
+  namespace: flow-server-grpc
+spec:
+  selector:
+    matchLabels:
+      app: flow-server
+  template:
+    metadata:
+      labels:
+        app: flow-server
+    spec:
+      containers:
+      - name: flow-server-container
+        image: flow-server:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 50052

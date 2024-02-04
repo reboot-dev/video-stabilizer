@@ -78,7 +78,7 @@ class Decoder:
             self.v.set(cv2.CAP_PROP_POS_FRAMES, frame)
         grabbed, frame = self.v.read()
         if not grabbed:
-            return []
+            return None
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
         return frame
 
@@ -151,7 +151,7 @@ def process_videos(video_pathname, num_videos, output_filename):
 
         frame = decoder.decode(start_frame + frame_index + 1)
 
-        if frame == []:
+        if frame is None:
             break
 
         print(count)
@@ -165,7 +165,7 @@ def process_videos(video_pathname, num_videos, output_filename):
         transforms = pickle.loads(stabilize_response.transforms)
         next_to_send = stabilize_response.next_to_send
 
-        if final_transform != []:
+        if final_transform is not None:
             writer.write_stabilized_video_frame_out(final_transform)
 
     smooth_client = SmoothClient()
@@ -186,10 +186,10 @@ def process_videos(video_pathname, num_videos, output_filename):
     print("finished stabilizing")
 
 def main(args):
-    threading.Thread(target=stabilizer_server.serve).start()
-    threading.Thread(target=flow_server.serve).start()
-    threading.Thread(target=cumsum_server.serve).start()
-    threading.Thread(target=smooth_server.serve).start()
+    # threading.Thread(target=stabilizer_server.serve).start()
+    # threading.Thread(target=flow_server.serve).start()
+    # threading.Thread(target=cumsum_server.serve).start()
+    # threading.Thread(target=smooth_server.serve).start()
     process_videos(args.video_path, args.num_videos, args.output_file)
 
 if __name__ == "__main__":
