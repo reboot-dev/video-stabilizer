@@ -21,5 +21,6 @@ spec:
       containers:
       - name: smooth-server-container
         image: smooth-server:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 50053

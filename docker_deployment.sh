@@ -20,6 +20,7 @@ cd /workspaces/video-stabilizer/video_stabilizer_server/stabilize_server
 docker build -t stabilize-server .
 cd /workspaces/video-stabilizer/video_stabilizer/
 docker build -t video-stabilizer .
+cd /workspaces/video-stabilizer/
 
 # delete k3d cluster
 k3d cluster delete --all
@@ -32,6 +33,7 @@ k3d image import flow-server:latest -c video-stabilizer-cluster
 k3d image import cumsum-server:latest -c video-stabilizer-cluster
 k3d image import smooth-server:latest -c video-stabilizer-cluster
 k3d image import stabilize-server:latest -c video-stabilizer-cluster
+k3d image import video-stabilizer:latest -c video-stabilizer-cluster
 
 # Run the deployment files
 kubectl apply -f ./k3d/cumsum_server_deployment.yaml
