@@ -4,6 +4,19 @@ metadata:
   name: video-stabilizer-grpc
 
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: stabilized-video-pvc
+  namespace: video-stabilizer-grpc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -24,3 +37,23 @@ spec:
         imagePullPolicy: Never
         ports:
         - containerPort: 50055
+        env:
+        - name: APP_PORT
+          value: "50055"
+        livenessProbe:
+          grpc:
+            port: 50055
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        # readinessProbe:
+        #   grpc:
+        #     port: 50055
+        #   initialDelaySeconds: 10
+        #   periodSeconds: 10
+        volumeMounts:
+        - mountPath: /app/stabilized_video
+          name: stabilized-video-volume
+      volumes:
+      - name: stabilized-video-volume
+        persistentVolumeClaim:
+          claimName: stabilized-video-pvc

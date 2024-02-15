@@ -23,4 +23,32 @@ spec:
         image: smooth-server:latest
         imagePullPolicy: Never
         ports:
-        - containerPort: 50053
+        - containerPort: 50054
+        env:
+        - name: APP_PORT
+          value: "50054"
+        livenessProbe:
+          grpc:
+            port: 50054
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        # readinessProbe:
+        #   grpc:
+        #     port: 50054
+        #   initialDelaySeconds: 10
+        #   periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smooth-server-service
+  namespace: smooth-server-grpc
+spec:
+  selector:
+    app: smooth-server
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 50054
+      targetPort: 50054

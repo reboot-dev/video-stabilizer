@@ -24,3 +24,31 @@ spec:
         imagePullPolicy: Never
         ports:
         - containerPort: 50052
+        env:
+        - name: APP_PORT
+          value: "50052"
+        livenessProbe:
+          grpc:
+            port: 50052
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        # readinessProbe:
+        #   grpc:
+        #     port: 50052
+        #   initialDelaySeconds: 10
+        #   periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flow-server-service
+  namespace: flow-server-grpc
+spec:
+  selector:
+    app: flow-server
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 50052
+      targetPort: 50052

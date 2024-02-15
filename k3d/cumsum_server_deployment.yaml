@@ -23,4 +23,32 @@ spec:
         image: cumsum-server:latest
         imagePullPolicy: Never
         ports:
-        - containerPort: 50051
+        - containerPort: 50053
+        env:
+        - name: APP_PORT
+          value: "50053"
+        livenessProbe:
+          grpc:
+            port: 50053
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        # readinessProbe:
+        #   grpc:
+        #     port: 50053
+        #   initialDelaySeconds: 10
+        #   periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cumsum-server-service
+  namespace: cumsum-server-grpc
+spec:
+  selector:
+    app: cumsum-server
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 50053
+      targetPort: 50053

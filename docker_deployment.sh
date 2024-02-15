@@ -1,4 +1,7 @@
 #!/bin/bash
+# delete k3d cluster
+k3d cluster delete --all
+
 ./bazelisk-1.15.0 build --build_python_zip //...
 
 # Copies zip files to their respective directories before running docker files
@@ -22,24 +25,23 @@ cd /workspaces/video-stabilizer/video_stabilizer/
 docker build -t video-stabilizer .
 cd /workspaces/video-stabilizer/
 
-# delete k3d cluster
-k3d cluster delete --all
-
 # start k3d cluster
 k3d cluster create --config ./k3d/k3d_config.yaml
 
-# import images to k3d cluster
+# import images to k3d cluster and deploy
 k3d image import flow-server:latest -c video-stabilizer-cluster
-k3d image import cumsum-server:latest -c video-stabilizer-cluster
-k3d image import smooth-server:latest -c video-stabilizer-cluster
-k3d image import stabilize-server:latest -c video-stabilizer-cluster
-k3d image import video-stabilizer:latest -c video-stabilizer-cluster
-
-# Run the deployment files
-kubectl apply -f ./k3d/cumsum_server_deployment.yaml
 kubectl apply -f ./k3d/flow_server_deployment.yaml
+
+k3d image import cumsum-server:latest -c video-stabilizer-cluster
+kubectl apply -f ./k3d/cumsum_server_deployment.yaml
+
+k3d image import smooth-server:latest -c video-stabilizer-cluster
 kubectl apply -f ./k3d/smooth_server_deployment.yaml
+
+k3d image import stabilize-server:latest -c video-stabilizer-cluster
 kubectl apply -f ./k3d/stabilize_server_deployment.yaml
+
+k3d image import video-stabilizer:latest -c video-stabilizer-cluster
 kubectl apply -f ./k3d/video_stabilizer_deployment.yaml
 
 
