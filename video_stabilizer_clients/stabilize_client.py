@@ -6,7 +6,7 @@ class StabilizeClient(object):
     # Client for gRPC functionality
 
     def __init__(self):
-        self.host = 'stabilize-server-service.stabilize-server-grpc.svc.cluster.local'
+        self.host = 'sts-service.stabilize-server-grpc.svc.cluster.local'
         self.server_port = 50051
 
         # instantiate a channel

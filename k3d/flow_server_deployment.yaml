@@ -9,46 +9,35 @@ kind: Deployment
 metadata:
   name: flow-server-deployment
   namespace: flow-server-grpc
+  labels:
+    app: flow-server
 spec:
   selector:
     matchLabels:
       app: flow-server
+  replicas: 1
   template:
     metadata:
       labels:
         app: flow-server
     spec:
       containers:
-      - name: flow-server-container
-        image: flow-server:latest
-        imagePullPolicy: Never
-        ports:
-        - containerPort: 50052
-        env:
-        - name: APP_PORT
-          value: "50052"
-        livenessProbe:
-          grpc:
-            port: 50052
-          initialDelaySeconds: 10
-          periodSeconds: 10
-        # readinessProbe:
-        #   grpc:
-        #     port: 50052
-        #   initialDelaySeconds: 10
-        #   periodSeconds: 10
+        - name: flow-server
+          image: flow-server:latest
+          imagePullPolicy: Never
+          ports:
+            - name: fs-service
+              containerPort: 50052
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: flow-server-service
+  name: fs-service
   namespace: flow-server-grpc
 spec:
   selector:
     app: flow-server
   ports:
-    - name: grpc
-      protocol: TCP
-      port: 50052
-      targetPort: 50052
+    - port: 50052
+      targetPort: fs-service
