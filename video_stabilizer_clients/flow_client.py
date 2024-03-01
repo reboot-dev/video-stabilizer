@@ -8,7 +8,8 @@ class FlowClient(object):
     """
 
     def __init__(self):
-        self.host = 'fs-service.flow-server-grpc.svc.cluster.local'
+        # self.host = 'fs-service.flow-server-grpc.svc.cluster.local'
+        self.host = 'localhost'
         self.server_port = 50052
 
         # instantiate a channel

@@ -42,6 +42,6 @@ k3d image import stabilize-server:latest -c video-stabilizer-cluster
 kubectl apply -f ./k3d/stabilize_server_deployment.yaml
 
 k3d image import video-stabilizer:latest -c video-stabilizer-cluster
-kubectl apply -f ./k3d/video_stabilizer_job.yaml
+kubectl apply -f ./k3d/video_stabilizer_pod.yaml
 sleep 300
-kubectl cp video-stabilizer-grpc/video-stabilizer-job-rrnwq:app/stabilized_video/stabilized_video.mp4 /workspaces/video-stabilizer/stabilized_video/stabilized_video.mp4
+kubectl cp video-stabilizer-grpc/video-stabilizer-pod:app/stabilized_video/stabilized_video.mp4 /workspaces/video-stabilizer/stabilized_video/stabilized_video.mp4

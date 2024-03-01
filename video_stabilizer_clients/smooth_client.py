@@ -8,7 +8,8 @@ class SmoothClient(object):
     """
 
     def __init__(self):
-        self.host = 'ss-service.smooth-server-grpc.svc.cluster.local'
+        # self.host = 'ss-service.smooth-server-grpc.svc.cluster.local'
+        self.host = 'localhost'
         self.server_port = 50054
 
         # instantiate a channel

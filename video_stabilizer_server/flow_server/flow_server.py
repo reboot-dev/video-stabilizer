@@ -18,8 +18,6 @@ class FlowService(pb2_grpc.FlowServicer):
         frame_image = pickle.loads(request.frame_image)
         p0 = pickle.loads(request.features)
 
-        #print(prev_frame)
-
         if p0 is [] or p0.shape[0] < 100:
             p0 = cv2.goodFeaturesToTrack(prev_frame,
                                          maxCorners=200,

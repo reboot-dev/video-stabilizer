@@ -15,7 +15,6 @@ message StabilizeRequest {
  bytes transforms = 6;
  int32 frame_index = 7;
  int32 radius = 8;
- int32 next_to_send = 9;
 }
 
 message StabilizeResponse {
@@ -23,7 +22,6 @@ message StabilizeResponse {
  bytes features = 2;
  bytes trajectory = 3;
  bytes transforms = 4;
- int32 next_to_send = 5;
 }
 
 service Flow {

@@ -8,7 +8,8 @@ class CumSumClient(object):
     """
 
     def __init__(self):
-        self.host = 'cs-service.cumsum-server-grpc.svc.cluster.local'
+        # self.host = 'cs-service.cumsum-server-grpc.svc.cluster.local'
+        self.host = 'localhost'
         self.server_port = 50053
 
         # instantiate a channel

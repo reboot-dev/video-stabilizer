@@ -17,7 +17,7 @@ class CumSumService(pb2_grpc.CumSumServicer):
         next = pickle.loads(request.transform)
 
         sum = [i + j for i, j in zip(prev, next)]
-        result = {'sum':pickle.dumps(sum)}
+        result = {'sum': pickle.dumps(sum)}
         return pb2.CumSumResponse(**result)
 
 def serve():

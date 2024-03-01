@@ -26,7 +26,6 @@ class StabilizeService(pb2_grpc.VideoStabilizerServicer):
         transforms = pickle.loads(request.transforms)
         frame_index = request.frame_index
         radius = request.radius
-        next_to_send = request.next_to_send
 
         flow_client = FlowClient()
         cumsum_client = CumSumClient()
@@ -38,7 +37,6 @@ class StabilizeService(pb2_grpc.VideoStabilizerServicer):
         # (previous points may go off frame).
         if frame_index and frame_index % 200 == 0:
             features = np.empty(0)
-        prev_frame = frame_image
         transforms.append(transform)
         if frame_index > 0:
             flow_response = cumsum_client.cumsum(pb2.CumSumRequest(trajectory_element=pickle.dumps(trajectory[-1]), transform=pickle.dumps(transform)))
@@ -55,10 +53,9 @@ class StabilizeService(pb2_grpc.VideoStabilizerServicer):
             final_transform = pickle.loads(smooth_response.final_transform)
             trajectory.pop(0)
 
-            next_to_send += 1
-            result = {'final_transform': pickle.dumps(final_transform), 'features': pickle.dumps(features), 'trajectory': pickle.dumps(trajectory), 'transforms': pickle.dumps(transforms), 'next_to_send':next_to_send}
+            result = {'final_transform': pickle.dumps(final_transform), 'features': pickle.dumps(features), 'trajectory': pickle.dumps(trajectory), 'transforms': pickle.dumps(transforms)}
         else:
-            result = {'final_transform': pickle.dumps(None), 'features': pickle.dumps(features), 'trajectory': pickle.dumps(trajectory), 'transforms': pickle.dumps(transforms), 'next_to_send':next_to_send}
+            result = {'final_transform': pickle.dumps(None), 'features': pickle.dumps(features), 'trajectory': pickle.dumps(trajectory), 'transforms': pickle.dumps(transforms)}
         return pb2.StabilizeResponse(**result)
 
 def serve():
