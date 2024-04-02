@@ -11,6 +11,7 @@ py_binary (
         requirement("grpcio-tools"),
         requirement("numpy"),
         requirement("pickle5"),
+        requirement("boto3")
     ],
     visibility = ["//visibility:public"]
 )

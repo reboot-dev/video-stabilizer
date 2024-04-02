@@ -12,6 +12,7 @@ py_binary (
         requirement("opencv-python-headless"),
         requirement("numpy"),
         requirement("pickle5"),
+        requirement("boto3")
     ],
     visibility = ["//visibility:public"]
 )
