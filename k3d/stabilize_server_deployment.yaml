@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stabilize-server-grpc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stabilize-server-deployment
+  namespace: stabilize-server-grpc
+  labels:
+    app: stabilize-server
+spec:
+  selector:
+    matchLabels:
+      app: stabilize-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: stabilize-server
+    spec:
+      containers:
+        - name: stabilize-server
+          image: stabilize-server:latest
+          imagePullPolicy: Never
+          ports:
+            - name: sts-service
+              containerPort: 50051
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sts-service
+  namespace: stabilize-server-grpc
+spec:
+  selector:
+    app: stabilize-server
+  ports:
+    - port: 50051
+      targetPort: sts-service

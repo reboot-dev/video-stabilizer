@@ -1,0 +1,17 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+load("@python_deps//:requirements.bzl", "requirement")
+
+py_binary (
+    name = "smooth_server",
+    srcs = ["smooth_server.py"],
+    deps = [
+        "//video_stabilizer_proto:video_stabilizer_py_proto",
+        "//video_stabilizer_proto:video_stabilizer_py_grpc",
+        requirement("grpcio"),
+        requirement("grpcio-tools"),
+        requirement("numpy"),
+        requirement("pickle5"),
+        requirement("boto3")
+    ],
+    visibility = ["//visibility:public"]
+)

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: video-stabilizer-grpc
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: video-stabilizer-job
+  namespace: video-stabilizer-grpc
+spec:
+  template:
+    metadata:
+      labels:
+        app: video-stabilizer
+    spec:
+      containers:
+        - name: video-stabilizer
+          image: video-stabilizer:latest
+          imagePullPolicy: Never
+      restartPolicy: Never

@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smooth-server-grpc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smooth-server-deployment
+  namespace: smooth-server-grpc
+  labels:
+    app: smooth-server
+spec:
+  selector:
+    matchLabels:
+      app: smooth-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: smooth-server
+    spec:
+      containers:
+        - name: smooth-server
+          image: smooth-server:latest
+          imagePullPolicy: Never
+          ports:
+            - name: ss-service
+              containerPort: 50054
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ss-service
+  namespace: smooth-server-grpc
+spec:
+  selector:
+    app: smooth-server
+  ports:
+    - port: 50054
+      targetPort: ss-service

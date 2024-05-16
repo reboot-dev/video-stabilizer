@@ -6,10 +6,10 @@ py_binary (
     name = "video_stabilizer",
     srcs = ["video_stabilizer.py"],
     deps = [
-        "//video_stabilizer_server:stabilize_server",
-        "//video_stabilizer_server:flow_server",
-        "//video_stabilizer_server:cumsum_server",
-        "//video_stabilizer_server:smooth_server",
+        "//video_stabilizer_server/stabilize_server:stabilize_server",
+        "//video_stabilizer_server/flow_server:flow_server",
+        "//video_stabilizer_server/cumsum_server:cumsum_server",
+        "//video_stabilizer_server/smooth_server:smooth_server",
         "//video_stabilizer_proto:video_stabilizer_py_proto",
         "//video_stabilizer_proto:video_stabilizer_py_grpc",
         "//video_stabilizer_clients:stabilize_client",
@@ -19,6 +19,7 @@ py_binary (
         requirement("opencv-python-headless"),
         requirement("numpy"),
         requirement("pickle5"),
+        requirement("boto3")
     ],
 )
 
