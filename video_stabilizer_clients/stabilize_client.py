@@ -6,8 +6,15 @@ class StabilizeClient(object):
     # Client for gRPC functionality
 
     def __init__(self):
+        # Used for kubernetes
         # self.host = 'sts-service.stabilize-server-grpc.svc.cluster.local'
-        self.host = 'localhost'
+
+        # Used for running locally
+        # self.host = 'localhost'
+
+        # Used for running with docker containers
+        self.host = '172.17.0.3'
+
         self.server_port = 50051
 
         # instantiate a channel

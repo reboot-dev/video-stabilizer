@@ -8,8 +8,15 @@ class FlowClient(object):
     """
 
     def __init__(self):
+        # Used for kubernetes
         # self.host = 'fs-service.flow-server-grpc.svc.cluster.local'
-        self.host = 'localhost'
+
+        # Used for running locally
+        # self.host = 'localhost'
+
+        # Used for running with docker containers
+        self.host = '172.17.0.2'
+
         self.server_port = 50052
 
         # instantiate a channel
